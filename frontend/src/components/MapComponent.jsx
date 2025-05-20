@@ -16,10 +16,8 @@ function LocationMarker({ selectedLocation, setSelectedLocation }) {
     click(e) {
       const { lat, lng } = e.latlng;
       if (selectedLocation && selectedLocation.lat === lat && selectedLocation.lng === lng) {
-        // Deselect if clicking the same location
         setSelectedLocation(null);
       } else {
-        // Select new location
         setSelectedLocation({
           lat,
           lng,
@@ -46,6 +44,8 @@ function LocationMarker({ selectedLocation, setSelectedLocation }) {
 export default function MapComponent() {
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
+  const [editingName, setEditingName] = useState('');
+  const [editingDescription, setEditingDescription] = useState('');
   const position = [51.505, -0.09];
 
   useEffect(() => {
@@ -61,15 +61,60 @@ export default function MapComponent() {
     fetchLocations();
   }, []);
 
+  useEffect(() => {
+    if (selectedLocation) {
+      setEditingName(selectedLocation.name || '');
+      setEditingDescription(selectedLocation.description || '');
+    }
+  }, [selectedLocation]);
+
   const handleSaveLocation = async () => {
     if (!selectedLocation) return;
     
+    const locationToSave = {
+      ...selectedLocation,
+      name: editingName,
+      description: editingDescription
+    };
+    
     try {
-      const response = await axios.post('/api/locations', selectedLocation);
+      const response = await axios.post('/api/locations', locationToSave);
       setLocations([...locations, response.data]);
       setSelectedLocation(null);
     } catch (error) {
       console.error('Error saving location:', error);
+    }
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!selectedLocation || !selectedLocation._id) return;
+    
+    const updatedLocation = {
+      ...selectedLocation,
+      name: editingName,
+      description: editingDescription
+    };
+    
+    try {
+      const response = await axios.put(`/api/locations/${selectedLocation._id}`, updatedLocation);
+      setLocations(locations.map(loc => 
+        loc._id === selectedLocation._id ? response.data : loc
+      ));
+      setSelectedLocation(response.data);
+    } catch (error) {
+      console.error('Error updating location:', error);
+    }
+  };
+
+  const handleDeleteLocation = async (id) => {
+    try {
+      await axios.delete(`/api/locations/${id}`);
+      setLocations(locations.filter(location => location._id !== id));
+      if (selectedLocation && selectedLocation._id === id) {
+        setSelectedLocation(null);
+      }
+    } catch (error) {
+      console.error('Error deleting location:', error);
     }
   };
 
@@ -86,11 +131,11 @@ export default function MapComponent() {
         />
         {locations.map(location => (
           <Marker 
-            key={location._id || location.id} 
+            key={location._id} 
             position={[location.lat, location.lng]}
             eventHandlers={{
               click: () => {
-                if (selectedLocation && selectedLocation.lat === location.lat && selectedLocation.lng === location.lng) {
+                if (selectedLocation && selectedLocation._id === location._id) {
                   setSelectedLocation(null);
                 } else {
                   setSelectedLocation(location);
@@ -102,6 +147,15 @@ export default function MapComponent() {
               <h3>{location.name}</h3>
               <p>Coordinates: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
               {location.description && <p>{location.description}</p>}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteLocation(location._id);
+                }}
+                style={{ marginTop: '10px', color: 'red' }}
+              >
+                Delete
+              </button>
             </Popup>
           </Marker>
         ))}
@@ -118,15 +172,65 @@ export default function MapComponent() {
           right: '10px',
           zIndex: 1000,
           background: 'white',
-          padding: '10px',
+          padding: '20px',
           borderRadius: '5px',
-          boxShadow: '0 0 10px rgba(0,0,0,0.2)'
+          boxShadow: '0 0 10px rgba(0,0,0,0.2)',
+          width: '300px'
         }}>
-          <h3>Selected Location</h3>
-          <p>Latitude: {selectedLocation.lat.toFixed(4)}</p>
-          <p>Longitude: {selectedLocation.lng.toFixed(4)}</p>
-          <button onClick={handleSaveLocation}>Save Location</button>
-          <button onClick={() => setSelectedLocation(null)}>Clear Selection</button>
+          <h3>{selectedLocation._id ? 'Edit Location' : 'New Location'}</h3>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Name:</label>
+            <input
+              type="text"
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              style={{ width: '100%', padding: '8px' }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Description:</label>
+            <textarea
+              value={editingDescription}
+              onChange={(e) => setEditingDescription(e.target.value)}
+              style={{ width: '100%', padding: '8px', minHeight: '80px' }}
+            />
+          </div>
+          
+          <p>Coordinates: {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}</p>
+          
+          <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+            {selectedLocation._id ? (
+              <>
+                <button 
+                  onClick={handleUpdateLocation}
+                  style={{ padding: '8px 15px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}
+                >
+                  Update
+                </button>
+                <button 
+                  onClick={() => handleDeleteLocation(selectedLocation._id)}
+                  style={{ padding: '8px 15px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px' }}
+                >
+                  Delete
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={handleSaveLocation}
+                style={{ padding: '8px 15px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}
+              >
+                Save Location
+              </button>
+            )}
+            <button 
+              onClick={() => setSelectedLocation(null)}
+              style={{ padding: '8px 15px', background: '#f1f1f1', border: 'none', borderRadius: '4px' }}
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </div>

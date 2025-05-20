@@ -63,6 +63,27 @@ app.delete('/api/locations/:id', async (req, res) => {
   }
 });
 
+app.put('/api/locations/:id', async (req, res) => {
+  try {
+    const updatedLocation = await Location.findByIdAndUpdate(
+      req.params.id,
+      {
+        name: req.body.name,
+        lat: req.body.lat,
+        lng: req.body.lng,
+        description: req.body.description
+      },
+      { new: true }
+    );
+    if (!updatedLocation) {
+      return res.status(404).json({ message: 'Location not found' });
+    }
+    res.json(updatedLocation);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 // Seed some initial data if collection is empty
 async function seedInitialData() {
   const count = await Location.countDocuments();
