@@ -97,24 +97,26 @@ export default function MapComponent() {
   };
 
   const handleUpdateLocation = async () => {
-    if (!selectedLocation || !selectedLocation._id) return;
-    
-    const updatedLocation = {
-      ...selectedLocation,
-      name: editingName,
-      description: editingDescription
-    };
-    
-    try {
-      const response = await axios.put(`/api/locations/${selectedLocation._id}`, updatedLocation);
-      setLocations(locations.map(loc => 
-        loc._id === selectedLocation._id ? response.data : loc
-      ));
-      setSelectedLocation(response.data);
-    } catch (error) {
-      console.error('Error updating location:', error);
-    }
+  if (!selectedLocation || !selectedLocation._id) return;
+  
+  const updatedLocation = {
+    name: editingName,
+    description: editingDescription,
+    lat: selectedLocation.lat,
+    lng: selectedLocation.lng
   };
+  
+  try {
+    const response = await axios.put(`/api/locations/${selectedLocation._id}`, updatedLocation);
+    setLocations(locations.map(loc => 
+      loc._id === selectedLocation._id ? response.data : loc
+    ));
+    setSelectedLocation(null);
+  } catch (error) {
+    console.error('Error updating location:', error);
+    setError('Failed to update location. Please try again.');
+  }
+};
 
   const handleDeleteLocation = async (id) => {
     try {
@@ -131,8 +133,9 @@ export default function MapComponent() {
   return (
     <div style={{ position: 'relative' }}>
       <MapContainer 
-        center={position} 
-        zoom={13} 
+        center={[20, 0]}
+        zoom={2}
+        minZoom={2}
         style={{ height: '100vh', width: '100%' }}
       >
         <TileLayer
