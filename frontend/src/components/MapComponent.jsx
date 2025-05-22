@@ -4,6 +4,39 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
 
+const styles = `
+  .button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.1s ease, filter 0.1s ease;
+  }
+
+  .button:active {
+    transform: scale(0.98);
+    filter: brightness(0.95);
+  }
+
+  .button-primary {
+    background: #4CAF50;
+    color: white;
+  }
+
+  .button-danger {
+    background: #f44336;
+    color: white;
+  }
+
+  .button-secondary {
+    background: #f1f1f1;
+  }
+`;
+
+const styleElement = document.createElement('style');
+styleElement.innerHTML = styles;
+document.head.appendChild(styleElement);
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
@@ -222,14 +255,14 @@ export default function MapComponent() {
               <>
                 <button 
                   onClick={handleUpdateLocation}
-                  style={{ padding: '8px 15px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}
+                  className="button button-primary"
                   aria-label="Update location"
                 >
                   Update
                 </button>
                 <button 
                   onClick={() => handleDeleteLocation(selectedLocation._id)}
-                  style={{ padding: '8px 15px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px' }}
+                  className="button button-danger"
                   aria-label="Delete location"
                 >
                   Delete
@@ -238,7 +271,7 @@ export default function MapComponent() {
             ) : (
               <button 
                 onClick={handleSaveLocation}
-                style={{ padding: '8px 15px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}
+                className="button button-primary"
                 aria-label="Save location"
               >
                 Save Location
@@ -246,7 +279,7 @@ export default function MapComponent() {
             )}
             <button 
               onClick={() => setSelectedLocation(null)}
-              style={{ padding: '8px 15px', background: '#f1f1f1', border: 'none', borderRadius: '4px' }}
+              className="button button-secondary"
               aria-label="Cancel editing"
             >
               Cancel
