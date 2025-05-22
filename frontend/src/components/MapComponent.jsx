@@ -97,26 +97,25 @@ export default function MapComponent() {
   };
 
   const handleUpdateLocation = async () => {
-  if (!selectedLocation || !selectedLocation._id) return;
-  
-  const updatedLocation = {
-    name: editingName,
-    description: editingDescription,
-    lat: selectedLocation.lat,
-    lng: selectedLocation.lng
+    if (!selectedLocation || !selectedLocation._id) return;
+    
+    const updatedLocation = {
+      name: editingName,
+      description: editingDescription,
+      lat: selectedLocation.lat,
+      lng: selectedLocation.lng
+    };
+    
+    try {
+      const response = await axios.put(`/api/locations/${selectedLocation._id}`, updatedLocation);
+      setLocations(locations.map(loc => 
+        loc._id === selectedLocation._id ? response.data : loc
+      ));
+      setSelectedLocation(null);
+    } catch (error) {
+      console.error('Error updating location:', error);
+    }
   };
-  
-  try {
-    const response = await axios.put(`/api/locations/${selectedLocation._id}`, updatedLocation);
-    setLocations(locations.map(loc => 
-      loc._id === selectedLocation._id ? response.data : loc
-    ));
-    setSelectedLocation(null);
-  } catch (error) {
-    console.error('Error updating location:', error);
-    setError('Failed to update location. Please try again.');
-  }
-};
 
   const handleDeleteLocation = async (id) => {
     try {
@@ -190,21 +189,29 @@ export default function MapComponent() {
           <h3>{selectedLocation._id ? 'Edit Location' : 'New Location'}</h3>
           
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Name:</label>
+            <label htmlFor="location-name" style={{ display: 'block', marginBottom: '5px' }}>Name:</label>
             <input
               type="text"
+              id="location-name"
+              name="name"
               value={editingName}
               onChange={(e) => setEditingName(e.target.value)}
               style={{ width: '100%', padding: '8px' }}
+              aria-label="Location name"
+              autoComplete="off"
             />
           </div>
           
           <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Description:</label>
+            <label htmlFor="location-description" style={{ display: 'block', marginBottom: '5px' }}>Description:</label>
             <textarea
+              id="location-description"
+              name="description"
               value={editingDescription}
               onChange={(e) => setEditingDescription(e.target.value)}
               style={{ width: '100%', padding: '8px', minHeight: '80px' }}
+              aria-label="Location description"
+              autoComplete="off"
             />
           </div>
           
@@ -216,12 +223,14 @@ export default function MapComponent() {
                 <button 
                   onClick={handleUpdateLocation}
                   style={{ padding: '8px 15px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}
+                  aria-label="Update location"
                 >
                   Update
                 </button>
                 <button 
                   onClick={() => handleDeleteLocation(selectedLocation._id)}
                   style={{ padding: '8px 15px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px' }}
+                  aria-label="Delete location"
                 >
                   Delete
                 </button>
@@ -230,6 +239,7 @@ export default function MapComponent() {
               <button 
                 onClick={handleSaveLocation}
                 style={{ padding: '8px 15px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}
+                aria-label="Save location"
               >
                 Save Location
               </button>
@@ -237,6 +247,7 @@ export default function MapComponent() {
             <button 
               onClick={() => setSelectedLocation(null)}
               style={{ padding: '8px 15px', background: '#f1f1f1', border: 'none', borderRadius: '4px' }}
+              aria-label="Cancel editing"
             >
               Cancel
             </button>
