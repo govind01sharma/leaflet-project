@@ -31,7 +31,17 @@ function LocationMarker({ selectedLocation, setSelectedLocation }) {
   if (!selectedLocation) return null;
 
   return (
-    <Marker position={[selectedLocation.lat, selectedLocation.lng]}>
+    <Marker 
+      position={[selectedLocation.lat, selectedLocation.lng]}
+      eventHandlers={{
+        mouseover: (e) => {
+          e.target.openPopup();
+        },
+        mouseout: (e) => {
+          e.target.closePopup();
+        }
+      }}
+    >
       <Popup>
         <h3>{selectedLocation.name}</h3>
         <p>Coordinates: {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}</p>
@@ -134,6 +144,12 @@ export default function MapComponent() {
             key={location._id} 
             position={[location.lat, location.lng]}
             eventHandlers={{
+              mouseover: (e) => {
+                e.target.openPopup();
+              },
+              mouseout: (e) => {
+                e.target.closePopup();
+              },
               click: () => {
                 if (selectedLocation && selectedLocation._id === location._id) {
                   setSelectedLocation(null);
@@ -147,15 +163,6 @@ export default function MapComponent() {
               <h3>{location.name}</h3>
               <p>Coordinates: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
               {location.description && <p>{location.description}</p>}
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteLocation(location._id);
-                }}
-                style={{ marginTop: '10px', color: 'red' }}
-              >
-                Delete
-              </button>
             </Popup>
           </Marker>
         ))}
