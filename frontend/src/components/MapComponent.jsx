@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -31,6 +31,18 @@ const styles = `
   .button-secondary {
     background: #f1f1f1;
   }
+
+  .mini-map-container {
+    height: 200px;
+    width: 200px;
+    margin-top: 10px;
+  }
+  
+  .mini-map {
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
+  }
 `;
 
 const styleElement = document.createElement('style');
@@ -43,6 +55,39 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
+
+function MiniMap({ lat, lng }) {
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    if (mapRef.current) {
+      const map = mapRef.current;
+      map.setView([lat, lng], 15);
+    }
+  }, [lat, lng]);
+
+  return (
+    <div className="mini-map-container">
+      <MapContainer
+        center={[lat, lng]}
+        zoom={15}
+        className="mini-map"
+        dragging={false}
+        zoomControl={false}
+        scrollWheelZoom={false}
+        doubleClickZoom={false}
+        touchZoom={false}
+        ref={mapRef}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        <Marker position={[lat, lng]} />
+      </MapContainer>
+    </div>
+  );
+}
 
 function LocationMarker({ selectedLocation, setSelectedLocation }) {
   const map = useMapEvents({
@@ -79,6 +124,7 @@ function LocationMarker({ selectedLocation, setSelectedLocation }) {
         <h3>{selectedLocation.name}</h3>
         <p>Coordinates: {selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)}</p>
         {selectedLocation.description && <p>{selectedLocation.description}</p>}
+        <MiniMap lat={selectedLocation.lat} lng={selectedLocation.lng} />
       </Popup>
     </Marker>
   );
@@ -89,7 +135,6 @@ export default function MapComponent() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [editingDescription, setEditingDescription] = useState('');
-  const position = [51.505, -0.09];
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -198,6 +243,7 @@ export default function MapComponent() {
               <h3>{location.name}</h3>
               <p>Coordinates: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
               {location.description && <p>{location.description}</p>}
+              <MiniMap lat={location.lat} lng={location.lng} />
             </Popup>
           </Marker>
         ))}
