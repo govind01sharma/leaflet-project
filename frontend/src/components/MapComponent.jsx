@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
@@ -29,7 +29,7 @@ const styles = `
   }
 
   .button-secondary {
-    background: #f1f1f1;
+    background: #add8e6;
   }
 
   .mini-map-container {
@@ -42,6 +42,18 @@ const styles = `
     height: 100%;
     width: 100%;
     pointer-events: none;
+  }
+
+  .connection-panel {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    width: 300px;
   }
 `;
 
@@ -135,6 +147,8 @@ export default function MapComponent() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [editingDescription, setEditingDescription] = useState('');
+  const [startPoint, setStartPoint] = useState(null);
+  const [endPoint, setEndPoint] = useState(null);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -155,6 +169,23 @@ export default function MapComponent() {
       setEditingDescription(selectedLocation.description || '');
     }
   }, [selectedLocation]);
+
+  const handleMarkerClick = (location) => {
+    if (!startPoint) {
+      setStartPoint(location);
+    } else if (!endPoint && location._id !== startPoint._id) {
+      setEndPoint(location);
+    } else {
+      setStartPoint(location);
+      setEndPoint(null);
+    }
+
+    if (selectedLocation && selectedLocation._id === location._id) {
+      setSelectedLocation(null);
+    } else {
+      setSelectedLocation(location);
+    }
+  };
 
   const handleSaveLocation = async () => {
     if (!selectedLocation) return;
@@ -202,9 +233,29 @@ export default function MapComponent() {
       if (selectedLocation && selectedLocation._id === id) {
         setSelectedLocation(null);
       }
+      if (startPoint && startPoint._id === id) {
+        setStartPoint(null);
+      }
+      if (endPoint && endPoint._id === id) {
+        setEndPoint(null);
+      }
     } catch (error) {
       console.error('Error deleting location:', error);
     }
+  };
+
+  const calculateDistance = (point1, point2) => {
+    if (!point1 || !point2) return 0;
+    
+    const R = 6371;
+    const dLat = (point2.lat - point1.lat) * Math.PI / 180;
+    const dLon = (point2.lng - point1.lng) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(point1.lat * Math.PI / 180) * Math.cos(point2.lat * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   };
 
   return (
@@ -224,19 +275,9 @@ export default function MapComponent() {
             key={location._id} 
             position={[location.lat, location.lng]}
             eventHandlers={{
-              mouseover: (e) => {
-                e.target.openPopup();
-              },
-              mouseout: (e) => {
-                e.target.closePopup();
-              },
-              click: () => {
-                if (selectedLocation && selectedLocation._id === location._id) {
-                  setSelectedLocation(null);
-                } else {
-                  setSelectedLocation(location);
-                }
-              }
+              mouseover: (e) => e.target.openPopup(),
+              mouseout: (e) => e.target.closePopup(),
+              click: () => handleMarkerClick(location)
             }}
           >
             <Popup>
@@ -247,6 +288,19 @@ export default function MapComponent() {
             </Popup>
           </Marker>
         ))}
+        
+        {startPoint && endPoint && (
+          <Polyline 
+            positions={[
+              [startPoint.lat, startPoint.lng],
+              [endPoint.lat, endPoint.lng]
+            ]}
+            color="blue"
+            weight={3}
+            opacity={0.7}
+          />
+        )}
+        
         <LocationMarker 
           selectedLocation={selectedLocation} 
           setSelectedLocation={setSelectedLocation} 
@@ -331,6 +385,31 @@ export default function MapComponent() {
               Cancel
             </button>
           </div>
+        </div>
+      )}
+      
+      {startPoint && (
+        <div className="connection-panel">
+          <h4>Connection</h4>
+          <p>From: {startPoint.name}</p>
+          {endPoint ? (
+            <>
+              <p>To: {endPoint.name}</p>
+              <p>Distance: {calculateDistance(startPoint, endPoint).toFixed(2)} km</p>
+            </>
+          ) : (
+            <p>Click another marker to set destination</p>
+          )}
+          <button 
+            onClick={() => {
+              setStartPoint(null);
+              setEndPoint(null);
+            }}
+            className="button button-secondary"
+            style={{ marginTop: '10px' }}
+          >
+            Clear Connection
+          </button>
         </div>
       )}
     </div>
